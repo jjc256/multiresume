@@ -128,6 +128,18 @@ function addHonor() {
     render();
 }
 
+let editState = null; // {section: string, id: string}
+
+function startEdit(section, id) {
+    editState = {section, id};
+    render();
+}
+
+function cancelEdit() {
+    editState = null;
+    render();
+}
+
 function addResume() {
     const name = document.getElementById('resumeName').value.trim();
     if (!name) return;
@@ -135,6 +147,10 @@ function addResume() {
     document.getElementById('resumeName').value = '';
     saveData();
     render();
+}
+
+function editResume(id) {
+    startEdit('resume', id);
 }
 
 function removeById(arr, id) {
@@ -148,28 +164,224 @@ function render() {
     renderLists();
     renderResumes();
 }
+function renderList(elementId, items, section, renderDisplay, renderEditor) {
+    const list = document.getElementById(elementId);
+    list.innerHTML = '';
+    items.forEach(item => {
+        const li = document.createElement('li');
+        if (editState && editState.section === section && editState.id === item.id) {
+            renderEditor(li, item);
+        } else {
+            renderDisplay(li, item);
+        }
+        list.appendChild(li);
+    });
+}
 
 function renderLists() {
-    const summaryList = document.getElementById('summaryList');
-    summaryList.innerHTML = data.summaries.map(s=>`<li>${s.text}</li>`).join('');
+    renderList('summaryList', data.summaries, 'summaries', (li, s) => {
+        li.textContent = s.text + ' ';
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => startEdit('summaries', s.id);
+        li.appendChild(btn);
+    }, (li, s) => {
+        const input = document.createElement('input');
+        input.value = s.text;
+        li.appendChild(input);
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.onclick = () => {
+            s.text = input.value.trim();
+            saveData();
+            cancelEdit();
+        };
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.onclick = cancelEdit;
+        li.appendChild(save);
+        li.appendChild(cancel);
+    });
 
-    const expList = document.getElementById('experienceList');
-    expList.innerHTML = data.experiences.map(e=>`<li>${e.role} @ ${e.org}</li>`).join('');
+    renderList('experienceList', data.experiences, 'experiences', (li, e) => {
+        li.textContent = `${e.role} @ ${e.org} `;
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => startEdit('experiences', e.id);
+        li.appendChild(btn);
+    }, (li, e) => {
+        const role = document.createElement('input');
+        role.value = e.role;
+        li.appendChild(role);
+        const org = document.createElement('input');
+        org.value = e.org;
+        li.appendChild(org);
+        const dates = document.createElement('input');
+        dates.value = e.dates;
+        li.appendChild(dates);
+        const highlights = document.createElement('textarea');
+        highlights.value = e.highlights.join('\n');
+        li.appendChild(highlights);
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.onclick = () => {
+            e.role = role.value.trim();
+            e.org = org.value.trim();
+            e.dates = dates.value.trim();
+            e.highlights = highlights.value.split('\n').map(s=>s.trim()).filter(Boolean);
+            saveData();
+            cancelEdit();
+        };
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.onclick = cancelEdit;
+        li.appendChild(save);
+        li.appendChild(cancel);
+    });
 
-    const projList = document.getElementById('projectList');
-    projList.innerHTML = data.projects.map(p=>`<li>${p.title}</li>`).join('');
+    renderList('projectList', data.projects, 'projects', (li, p) => {
+        li.textContent = p.title + ' ';
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => startEdit('projects', p.id);
+        li.appendChild(btn);
+    }, (li, p) => {
+        const title = document.createElement('input');
+        title.value = p.title;
+        li.appendChild(title);
+        const link = document.createElement('input');
+        link.value = p.link;
+        li.appendChild(link);
+        const highlights = document.createElement('textarea');
+        highlights.value = p.highlights.join('\n');
+        li.appendChild(highlights);
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.onclick = () => {
+            p.title = title.value.trim();
+            p.link = link.value.trim();
+            p.highlights = highlights.value.split('\n').map(s=>s.trim()).filter(Boolean);
+            saveData();
+            cancelEdit();
+        };
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.onclick = cancelEdit;
+        li.appendChild(save);
+        li.appendChild(cancel);
+    });
 
-    const eduList = document.getElementById('educationList');
-    eduList.innerHTML = data.education.map(e=>`<li>${e.school} -- ${e.degree}</li>`).join('');
+    renderList('educationList', data.education, 'education', (li, e) => {
+        li.textContent = `${e.school} -- ${e.degree} `;
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => startEdit('education', e.id);
+        li.appendChild(btn);
+    }, (li, e) => {
+        const school = document.createElement('input');
+        school.value = e.school;
+        li.appendChild(school);
+        const degree = document.createElement('input');
+        degree.value = e.degree;
+        li.appendChild(degree);
+        const dates = document.createElement('input');
+        dates.value = e.dates;
+        li.appendChild(dates);
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.onclick = () => {
+            e.school = school.value.trim();
+            e.degree = degree.value.trim();
+            e.dates = dates.value.trim();
+            saveData();
+            cancelEdit();
+        };
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.onclick = cancelEdit;
+        li.appendChild(save);
+        li.appendChild(cancel);
+    });
 
-    const courseList = document.getElementById('courseworkList');
-    courseList.innerHTML = data.coursework.map(c=>`<li>${c.category}: ${c.items}</li>`).join('');
+    renderList('courseworkList', data.coursework, 'coursework', (li, c) => {
+        li.textContent = `${c.category}: ${c.items} `;
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => startEdit('coursework', c.id);
+        li.appendChild(btn);
+    }, (li, c) => {
+        const category = document.createElement('input');
+        category.value = c.category;
+        li.appendChild(category);
+        const items = document.createElement('input');
+        items.value = c.items;
+        li.appendChild(items);
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.onclick = () => {
+            c.category = category.value.trim();
+            c.items = items.value.trim();
+            saveData();
+            cancelEdit();
+        };
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.onclick = cancelEdit;
+        li.appendChild(save);
+        li.appendChild(cancel);
+    });
 
-    const skillList = document.getElementById('skillList');
-    skillList.innerHTML = data.skills.map(s=>`<li>${s.category}: ${s.items}</li>`).join('');
+    renderList('skillList', data.skills, 'skills', (li, s) => {
+        li.textContent = `${s.category}: ${s.items} `;
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => startEdit('skills', s.id);
+        li.appendChild(btn);
+    }, (li, s) => {
+        const category = document.createElement('input');
+        category.value = s.category;
+        li.appendChild(category);
+        const items = document.createElement('input');
+        items.value = s.items;
+        li.appendChild(items);
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.onclick = () => {
+            s.category = category.value.trim();
+            s.items = items.value.trim();
+            saveData();
+            cancelEdit();
+        };
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.onclick = cancelEdit;
+        li.appendChild(save);
+        li.appendChild(cancel);
+    });
 
-    const honorList = document.getElementById('honorList');
-    honorList.innerHTML = data.honors.map(h=>`<li>${h.text}</li>`).join('');
+    renderList('honorList', data.honors, 'honors', (li, h) => {
+        li.textContent = h.text + ' ';
+        const btn = document.createElement('button');
+        btn.textContent = 'Edit';
+        btn.onclick = () => startEdit('honors', h.id);
+        li.appendChild(btn);
+    }, (li, h) => {
+        const input = document.createElement('input');
+        input.value = h.text;
+        li.appendChild(input);
+        const save = document.createElement('button');
+        save.textContent = 'Save';
+        save.onclick = () => {
+            h.text = input.value.trim();
+            saveData();
+            cancelEdit();
+        };
+        const cancel = document.createElement('button');
+        cancel.textContent = 'Cancel';
+        cancel.onclick = cancelEdit;
+        li.appendChild(save);
+        li.appendChild(cancel);
+    });
 }
 
 function renderContact() {
@@ -186,9 +398,34 @@ function renderResumes() {
     data.resumes.forEach(resume => {
         const div = document.createElement('div');
         div.className = 'resume-block';
-        const name = document.createElement('h3');
-        name.textContent = resume.name;
-        div.appendChild(name);
+        if (editState && editState.section === 'resume' && editState.id === resume.id) {
+            const input = document.createElement('input');
+            input.value = resume.name;
+            div.appendChild(input);
+            const save = document.createElement('button');
+            save.textContent = 'Save';
+            save.onclick = () => {
+                const val = input.value.trim();
+                if (val) {
+                    resume.name = val;
+                    saveData();
+                }
+                cancelEdit();
+            };
+            const cancel = document.createElement('button');
+            cancel.textContent = 'Cancel';
+            cancel.onclick = cancelEdit;
+            div.appendChild(save);
+            div.appendChild(cancel);
+        } else {
+            const name = document.createElement('h3');
+            name.textContent = resume.name;
+            div.appendChild(name);
+            const editBtn = document.createElement('button');
+            editBtn.textContent = 'Edit Name';
+            editBtn.onclick = () => editResume(resume.id);
+            div.appendChild(editBtn);
+        }
 
         div.appendChild(createSelection(resume, 'Summary', data.summaries, resume.summaries));
         div.appendChild(createSelection(resume, 'Education', data.education, resume.education, e => `${e.school} -- ${e.degree}`));
@@ -441,5 +678,6 @@ window.addHonor = addHonor;
 window.addResume = addResume;
 window.copyLatex = copyLatex;
 window.saveContact = saveContact;
+window.editResume = editResume;
 
 render();
