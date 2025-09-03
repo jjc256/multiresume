@@ -17,6 +17,16 @@
 <section id="data-entry">
 <h2>Sections</h2>
 <div>
+    <h3>Contact Info</h3>
+    <input id="contactName" placeholder="Name" size="15">
+    <input id="contactEmail" placeholder="Email" size="20">
+    <input id="contactPhone" placeholder="Phone" size="15">
+    <input id="contactWebsite" placeholder="Website" size="20">
+    <input id="contactGithub" placeholder="GitHub" size="20">
+    <button onclick="saveContact()">Save</button>
+</div>
+
+<div>
     <h3>Add Summary</h3>
     <input id="summaryText" placeholder="Summary text" size="50">
     <button onclick="addSummary()">Add</button>
@@ -44,6 +54,15 @@
     <br>
     <button onclick="addProject()">Add</button>
     <ul id="projectList"></ul>
+</div>
+
+<div>
+    <h3>Add Education</h3>
+    <input id="eduSchool" placeholder="School" size="20">
+    <input id="eduDegree" placeholder="Degree" size="20">
+    <input id="eduDates" placeholder="Dates" size="15">
+    <button onclick="addEducation()">Add</button>
+    <ul id="educationList"></ul>
 </div>
 
 <div>

@@ -3,9 +3,11 @@ const STORAGE_KEY = 'multiResumeData';
 
 function defaultData() {
     return {
+        contact: {name: '', email: '', phone: '', website: '', github: ''},
         summaries: [],
         experiences: [],
         projects: [],
+        education: [],
         coursework: [],
         skills: [],
         honors: [],
@@ -30,8 +32,21 @@ function uid() {
 }
 
 let data = loadData();
+data.contact = data.contact || {name: '', email: '', phone: '', website: '', github: ''};
+data.education = data.education || [];
+data.resumes.forEach(r => { r.education = r.education || []; });
 
 // Add section functions
+function saveContact() {
+    data.contact.name = document.getElementById('contactName').value.trim();
+    data.contact.email = document.getElementById('contactEmail').value.trim();
+    data.contact.phone = document.getElementById('contactPhone').value.trim();
+    data.contact.website = document.getElementById('contactWebsite').value.trim();
+    data.contact.github = document.getElementById('contactGithub').value.trim();
+    saveData();
+    render();
+}
+
 function addSummary() {
     const text = document.getElementById('summaryText').value.trim();
     if (!text) return;
@@ -65,6 +80,19 @@ function addProject() {
     document.getElementById('projTitle').value = '';
     document.getElementById('projLink').value = '';
     document.getElementById('projHighlights').value = '';
+    saveData();
+    render();
+}
+
+function addEducation() {
+    const school = document.getElementById('eduSchool').value.trim();
+    const degree = document.getElementById('eduDegree').value.trim();
+    const dates = document.getElementById('eduDates').value.trim();
+    if (!school || !degree) return;
+    data.education.push({id: uid(), school, degree, dates});
+    document.getElementById('eduSchool').value = '';
+    document.getElementById('eduDegree').value = '';
+    document.getElementById('eduDates').value = '';
     saveData();
     render();
 }
@@ -103,7 +131,7 @@ function addHonor() {
 function addResume() {
     const name = document.getElementById('resumeName').value.trim();
     if (!name) return;
-    data.resumes.push({id: uid(), name, summaries: [], experiences: [], projects: [], coursework: [], skills: [], honors: []});
+    data.resumes.push({id: uid(), name, summaries: [], education: [], experiences: [], projects: [], coursework: [], skills: [], honors: []});
     document.getElementById('resumeName').value = '';
     saveData();
     render();
@@ -116,6 +144,7 @@ function removeById(arr, id) {
 
 // Rendering
 function render() {
+    renderContact();
     renderLists();
     renderResumes();
 }
@@ -130,6 +159,9 @@ function renderLists() {
     const projList = document.getElementById('projectList');
     projList.innerHTML = data.projects.map(p=>`<li>${p.title}</li>`).join('');
 
+    const eduList = document.getElementById('educationList');
+    eduList.innerHTML = data.education.map(e=>`<li>${e.school} -- ${e.degree}</li>`).join('');
+
     const courseList = document.getElementById('courseworkList');
     courseList.innerHTML = data.coursework.map(c=>`<li>${c.category}: ${c.items}</li>`).join('');
 
@@ -138,6 +170,14 @@ function renderLists() {
 
     const honorList = document.getElementById('honorList');
     honorList.innerHTML = data.honors.map(h=>`<li>${h.text}</li>`).join('');
+}
+
+function renderContact() {
+    document.getElementById('contactName').value = data.contact.name;
+    document.getElementById('contactEmail').value = data.contact.email;
+    document.getElementById('contactPhone').value = data.contact.phone;
+    document.getElementById('contactWebsite').value = data.contact.website;
+    document.getElementById('contactGithub').value = data.contact.github;
 }
 
 function renderResumes() {
@@ -151,6 +191,7 @@ function renderResumes() {
         div.appendChild(name);
 
         div.appendChild(createSelection(resume, 'Summary', data.summaries, resume.summaries));
+        div.appendChild(createSelection(resume, 'Education', data.education, resume.education, e => `${e.school} -- ${e.degree}`));
         div.appendChild(createSelection(resume, 'Experience', data.experiences, resume.experiences, e => `${e.role} @ ${e.org}`));
         div.appendChild(createSelection(resume, 'Projects', data.projects, resume.projects, p => p.title));
         div.appendChild(createSelection(resume, 'Coursework', data.coursework, resume.coursework, c => `${c.category}`));
@@ -264,6 +305,32 @@ function escapeLatex(str) {
     return str.replace(/\\/g,'\\textbackslash{}').replace(/([%&#_$^{}])/g,'\\$1');
 }
 
+function buildHeader() {
+    const c = data.contact;
+    if (!c.name) return '';
+    const parts = [];
+    if (c.email) parts.push(`\\href{mailto:${escapeLatex(c.email)}}{${escapeLatex(c.email)}}`);
+    if (c.phone) parts.push(escapeLatex(c.phone));
+    if (c.website) parts.push(`\\href{${escapeLatex(c.website)}}{${escapeLatex(c.website)}}`);
+    if (c.github) parts.push(`\\href{${escapeLatex(c.github)}}{${escapeLatex(c.github)}}`);
+    let out = `\n%-----------%\n% Header\n%-----------%\n\\begin{center}\n{\\LARGE ${escapeLatex(c.name)}}\\\\\n`;
+    if (parts.length) out += parts.join(' $|$ ') + '\\n';
+    out += `\\end{center}\n`;
+    return out;
+}
+
+function buildEducation(resume) {
+    if (resume.education.length === 0) return '';
+    let out = `\n%-----------%\n% Education\n%-----------%\n\\section{Education}\n`;
+    resume.education.forEach((id, idx) => {
+        const e = data.education.find(x=>x.id===id);
+        if (!e) return;
+        out += `\\begin{twocolentry}{${escapeLatex(e.dates)}}\n\\textbf{${escapeLatex(e.school)}} -- ${escapeLatex(e.degree)}\\end{twocolentry}\n`;
+        if (idx !== resume.education.length-1) out += `\\vspace{0.2 cm}\n`;
+    });
+    return out;
+}
+
 function buildSummary(resume) {
     if (resume.summaries.length === 0) return '';
     let out = `\n%-----------%\n% Summary\n%-----------%\n\\section{Summary}\n`;
@@ -347,7 +414,9 @@ function generateLatex(resumeId) {
     const resume = data.resumes.find(r=>r.id===resumeId);
     if (!resume) return '';
     return LATEX_PREAMBLE +
+        buildHeader() +
         buildSummary(resume) +
+        buildEducation(resume) +
         buildExperiences(resume) +
         buildProjects(resume) +
         buildCoursework(resume) +
@@ -365,10 +434,12 @@ function copyLatex() {
 window.addSummary = addSummary;
 window.addExperience = addExperience;
 window.addProject = addProject;
+window.addEducation = addEducation;
 window.addCoursework = addCoursework;
 window.addSkill = addSkill;
 window.addHonor = addHonor;
 window.addResume = addResume;
 window.copyLatex = copyLatex;
+window.saveContact = saveContact;
 
 render();
