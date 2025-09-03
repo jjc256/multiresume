@@ -1,0 +1,374 @@
+// Data handling
+const STORAGE_KEY = 'multiResumeData';
+
+function defaultData() {
+    return {
+        summaries: [],
+        experiences: [],
+        projects: [],
+        coursework: [],
+        skills: [],
+        honors: [],
+        resumes: []
+    };
+}
+
+function loadData() {
+    try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaultData();
+    } catch (e) {
+        return defaultData();
+    }
+}
+
+function saveData() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function uid() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2,5);
+}
+
+let data = loadData();
+
+// Add section functions
+function addSummary() {
+    const text = document.getElementById('summaryText').value.trim();
+    if (!text) return;
+    data.summaries.push({id: uid(), text});
+    document.getElementById('summaryText').value = '';
+    saveData();
+    render();
+}
+
+function addExperience() {
+    const role = document.getElementById('expRole').value.trim();
+    const org = document.getElementById('expOrg').value.trim();
+    const dates = document.getElementById('expDates').value.trim();
+    const highlights = document.getElementById('expHighlights').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if (!role || !org) return;
+    data.experiences.push({id: uid(), role, org, dates, highlights});
+    document.getElementById('expRole').value = '';
+    document.getElementById('expOrg').value = '';
+    document.getElementById('expDates').value = '';
+    document.getElementById('expHighlights').value = '';
+    saveData();
+    render();
+}
+
+function addProject() {
+    const title = document.getElementById('projTitle').value.trim();
+    const link = document.getElementById('projLink').value.trim();
+    const highlights = document.getElementById('projHighlights').value.split('\n').map(s=>s.trim()).filter(Boolean);
+    if (!title) return;
+    data.projects.push({id: uid(), title, link, highlights});
+    document.getElementById('projTitle').value = '';
+    document.getElementById('projLink').value = '';
+    document.getElementById('projHighlights').value = '';
+    saveData();
+    render();
+}
+
+function addCoursework() {
+    const category = document.getElementById('courseCategory').value.trim();
+    const items = document.getElementById('courseItems').value.trim();
+    if (!category || !items) return;
+    data.coursework.push({id: uid(), category, items});
+    document.getElementById('courseCategory').value = '';
+    document.getElementById('courseItems').value = '';
+    saveData();
+    render();
+}
+
+function addSkill() {
+    const category = document.getElementById('skillCategory').value.trim();
+    const items = document.getElementById('skillItems').value.trim();
+    if (!category || !items) return;
+    data.skills.push({id: uid(), category, items});
+    document.getElementById('skillCategory').value = '';
+    document.getElementById('skillItems').value = '';
+    saveData();
+    render();
+}
+
+function addHonor() {
+    const text = document.getElementById('honorText').value.trim();
+    if (!text) return;
+    data.honors.push({id: uid(), text});
+    document.getElementById('honorText').value = '';
+    saveData();
+    render();
+}
+
+function addResume() {
+    const name = document.getElementById('resumeName').value.trim();
+    if (!name) return;
+    data.resumes.push({id: uid(), name, summaries: [], experiences: [], projects: [], coursework: [], skills: [], honors: []});
+    document.getElementById('resumeName').value = '';
+    saveData();
+    render();
+}
+
+function removeById(arr, id) {
+    const idx = arr.indexOf(id);
+    if (idx >= 0) arr.splice(idx,1);
+}
+
+// Rendering
+function render() {
+    renderLists();
+    renderResumes();
+}
+
+function renderLists() {
+    const summaryList = document.getElementById('summaryList');
+    summaryList.innerHTML = data.summaries.map(s=>`<li>${s.text}</li>`).join('');
+
+    const expList = document.getElementById('experienceList');
+    expList.innerHTML = data.experiences.map(e=>`<li>${e.role} @ ${e.org}</li>`).join('');
+
+    const projList = document.getElementById('projectList');
+    projList.innerHTML = data.projects.map(p=>`<li>${p.title}</li>`).join('');
+
+    const courseList = document.getElementById('courseworkList');
+    courseList.innerHTML = data.coursework.map(c=>`<li>${c.category}: ${c.items}</li>`).join('');
+
+    const skillList = document.getElementById('skillList');
+    skillList.innerHTML = data.skills.map(s=>`<li>${s.category}: ${s.items}</li>`).join('');
+
+    const honorList = document.getElementById('honorList');
+    honorList.innerHTML = data.honors.map(h=>`<li>${h.text}</li>`).join('');
+}
+
+function renderResumes() {
+    const container = document.getElementById('resumeContainer');
+    container.innerHTML = '';
+    data.resumes.forEach(resume => {
+        const div = document.createElement('div');
+        div.className = 'resume-block';
+        const name = document.createElement('h3');
+        name.textContent = resume.name;
+        div.appendChild(name);
+
+        div.appendChild(createSelection(resume, 'Summary', data.summaries, resume.summaries));
+        div.appendChild(createSelection(resume, 'Experience', data.experiences, resume.experiences, e => `${e.role} @ ${e.org}`));
+        div.appendChild(createSelection(resume, 'Projects', data.projects, resume.projects, p => p.title));
+        div.appendChild(createSelection(resume, 'Coursework', data.coursework, resume.coursework, c => `${c.category}`));
+        div.appendChild(createSelection(resume, 'Skills', data.skills, resume.skills, s => `${s.category}`));
+        div.appendChild(createSelection(resume, 'Honors', data.honors, resume.honors, h => h.text));
+
+        const btn = document.createElement('button');
+        btn.textContent = 'Show LaTeX';
+        btn.onclick = () => {
+            const latex = generateLatex(resume.id);
+            document.getElementById('latexOutput').value = latex;
+        };
+        div.appendChild(btn);
+
+        container.appendChild(div);
+    });
+}
+
+function createSelection(resume, label, items, selected, displayFn) {
+    displayFn = displayFn || (x => x.text);
+    const wrapper = document.createElement('div');
+    const title = document.createElement('strong');
+    title.textContent = label;
+    wrapper.appendChild(title);
+    const list = document.createElement('div');
+    items.forEach(item => {
+        const id = `${label}-${resume.id}-${item.id}`;
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.id = id;
+        cb.checked = selected.includes(item.id);
+        cb.addEventListener('change', () => {
+            if (cb.checked) selected.push(item.id); else removeById(selected, item.id);
+            saveData();
+        });
+        const lab = document.createElement('label');
+        lab.htmlFor = id;
+        lab.textContent = displayFn(item);
+        list.appendChild(cb);
+        list.appendChild(lab);
+        list.appendChild(document.createElement('br'));
+    });
+    wrapper.appendChild(list);
+    return wrapper;
+}
+
+// LaTeX generation
+const LATEX_PREAMBLE = String.raw`\documentclass[10pt, letterpaper]{article}
+% Packages:
+\usepackage[
+    ignoreheadfoot,
+    top=2 cm,
+    bottom=2 cm,
+    left=2 cm,
+    right=2 cm,
+    footskip=1.0 cm,
+]{geometry}
+\usepackage{titlesec}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage[dvipsnames]{xcolor}
+\definecolor{primaryColor}{RGB}{0, 0, 0}
+\usepackage{enumitem}
+\usepackage{fontawesome5}
+\usepackage{amsmath}
+\usepackage[
+    pdftitle={Resume},
+    pdfauthor={Author},
+    pdfcreator={LaTeX},
+    colorlinks=true,
+    urlcolor=primaryColor,
+]{hyperref}
+\usepackage[pscoord]{eso-pic}
+\usepackage{calc}
+\usepackage{bookmark}
+\usepackage{lastpage}
+\usepackage{changepage}
+\usepackage{paracol}
+\usepackage{ifthen}
+\usepackage{needspace}
+\usepackage{iftex}
+\ifPDFTeX
+    \input{glyphtounicode}
+    \pdfgentounicode=1
+    \usepackage[T1]{fontenc}
+    \usepackage[utf8]{inputenc}
+    \usepackage{lmodern}
+\fi
+\usepackage{charter}
+\raggedright
+\AtBeginEnvironment{adjustwidth}{\partopsep0pt}
+\pagestyle{empty}
+\setcounter{secnumdepth}{0}
+\setlength{\parindent}{0pt}
+\setlength{\topskip}{0pt}
+\setlength{\columnsep}{0.15cm}
+\pagenumbering{gobble}
+\titleformat{\section}{\needspace{4\baselineskip}\bfseries\large}{}{0pt}{}[\vspace{1pt}\titlerule]
+\titlespacing{\section}{-1pt}{0.3 cm}{0.2 cm}
+\renewcommand\labelitemi{$\vcenter{\hbox{\small$\bullet$}}$}
+\newenvironment{highlights}{\begin{itemize}[topsep=0.10 cm,parsep=0.10 cm,partopsep=0pt,itemsep=0pt,leftmargin=0 cm + 10pt]}{\end{itemize}}
+\newenvironment{highlightsforbulletentries}{\begin{itemize}[topsep=0.10 cm,parsep=0.10 cm,partopsep=0pt,itemsep=0pt,leftmargin=10pt]}{\end{itemize}}
+\newenvironment{onecolentry}{\begin{adjustwidth}{0 cm + 0.00001 cm}{0 cm + 0.00001 cm}}{\end{adjustwidth}}
+\newenvironment{twocolentry}[2][]{\onecolentry\def\secondColumn{#2}\setcolumnwidth{\fill, 7.5 cm}\begin{paracol}{2}}{\switchcolumn \raggedleft \secondColumn\end{paracol}\endonecolentry}
+\newenvironment{threecolentry}[3][]{\onecolentry\def\thirdColumn{#3}\setcolumnwidth{, \fill, 4.5 cm}\begin{paracol}{3}}{\switchcolumn[2]\raggedleft \thirdColumn\end{paracol}\endonecolentry}
+\begin{document}`;
+
+const LATEX_END = String.raw`\end{document}`;
+
+function escapeLatex(str) {
+    return str.replace(/\\/g,'\\textbackslash{}').replace(/([%&#_$^{}])/g,'\\$1');
+}
+
+function buildSummary(resume) {
+    if (resume.summaries.length === 0) return '';
+    let out = `\n%-----------%\n% Summary\n%-----------%\n\\section{Summary}\n`;
+    resume.summaries.forEach(id => {
+        const s = data.summaries.find(x=>x.id===id);
+        if (s) out += `\\begin{onecolentry}\n${escapeLatex(s.text)}\n\\end{onecolentry}\n`;
+    });
+    return out;
+}
+
+function buildExperiences(resume) {
+    if (resume.experiences.length === 0) return '';
+    let out = `\n%-----------%\n% Experience\n%-----------%\n\\section{Experience}\n`;
+    resume.experiences.forEach((id, idx) => {
+        const e = data.experiences.find(x=>x.id===id);
+        if (!e) return;
+        out += `\\begin{twocolentry}{${escapeLatex(e.dates)}}\n\\textbf{${escapeLatex(e.role)}}, ${escapeLatex(e.org)}\\end{twocolentry}\n\\vspace{0.1 cm}\n\\begin{onecolentry}\n\\begin{highlights}\n`;
+        e.highlights.forEach(h => { out += `    \\item ${escapeLatex(h)}\n`; });
+        out += `\\end{highlights}\n\\end{onecolentry}\n`;
+        if (idx !== resume.experiences.length-1) out += `\\vspace{0.2 cm}\n`;
+    });
+    return out;
+}
+
+function buildProjects(resume) {
+    if (resume.projects.length === 0) return '';
+    let out = `\n%-----------%\n% Projects\n%-----------%\n\\section{Projects}\n`;
+    resume.projects.forEach((id, idx) => {
+        const p = data.projects.find(x=>x.id===id);
+        if (!p) return;
+        const secondCol = p.link ? `\\href{${escapeLatex(p.link)}}{${escapeLatex(p.link)}}` : '';
+        out += `\\begin{twocolentry}{${secondCol}}\n\\textbf{${escapeLatex(p.title)}}\\end{twocolentry}\n`;
+        if (p.highlights.length) {
+            out += `\\vspace{0.1 cm}\n\\begin{onecolentry}\n\\begin{highlights}\n`;
+            p.highlights.forEach(h=>{ out += `    \\item ${escapeLatex(h)}\n`; });
+            out += `\\end{highlights}\n\\end{onecolentry}\n`;
+        }
+        if (idx !== resume.projects.length-1) out += `\\vspace{0.2 cm}\n`;
+    });
+    return out;
+}
+
+function buildCoursework(resume) {
+    if (resume.coursework.length === 0) return '';
+    let out = `\n%-----------%\n% Coursework\n%-----------%\n\\section{Relevant Coursework}\n\\begin{onecolentry}\n`;
+    resume.coursework.forEach((id, idx) => {
+        const c = data.coursework.find(x=>x.id===id);
+        if (!c) return;
+        out += `\\textbf{${escapeLatex(c.category)}:} ${escapeLatex(c.items)}`;
+        if (idx !== resume.coursework.length-1) out += ` \\\\`; // line break
+    });
+    out += `\n\\end{onecolentry}\n`;
+    return out;
+}
+
+function buildSkills(resume) {
+    if (resume.skills.length === 0) return '';
+    let out = `\n%-----------%\n% Technical Skills\n%-----------%\n\\section{Technical Skills}\n\\begin{onecolentry}\n`;
+    resume.skills.forEach((id, idx) => {
+        const s = data.skills.find(x=>x.id===id);
+        if (!s) return;
+        out += `\\textbf{${escapeLatex(s.category)}:} ${escapeLatex(s.items)}`;
+        if (idx !== resume.skills.length-1) out += ` \\\\`;
+    });
+    out += `\n\\end{onecolentry}\n`;
+    return out;
+}
+
+function buildHonors(resume) {
+    if (resume.honors.length === 0) return '';
+    let out = `\n%-----------%\n% Awards and Honors\n%-----------%\n\\section{Awards and Honors}\n\\begin{onecolentry}\n\\begin{highlights}\n`;
+    resume.honors.forEach(id => {
+        const h = data.honors.find(x=>x.id===id);
+        if (h) out += `    \\item ${escapeLatex(h.text)}\n`;
+    });
+    out += `\\end{highlights}\n\\end{onecolentry}\n`;
+    return out;
+}
+
+function generateLatex(resumeId) {
+    const resume = data.resumes.find(r=>r.id===resumeId);
+    if (!resume) return '';
+    return LATEX_PREAMBLE +
+        buildSummary(resume) +
+        buildExperiences(resume) +
+        buildProjects(resume) +
+        buildCoursework(resume) +
+        buildSkills(resume) +
+        buildHonors(resume) +
+        '\n' + LATEX_END;
+}
+
+function copyLatex() {
+    const text = document.getElementById('latexOutput').value;
+    navigator.clipboard.writeText(text);
+    alert('LaTeX copied to clipboard');
+}
+
+window.addSummary = addSummary;
+window.addExperience = addExperience;
+window.addProject = addProject;
+window.addCoursework = addCoursework;
+window.addSkill = addSkill;
+window.addHonor = addHonor;
+window.addResume = addResume;
+window.copyLatex = copyLatex;
+
+render();
