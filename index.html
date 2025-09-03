@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Multi Resume Builder</title>
+    <style>
+        body{font-family:Arial, sans-serif;margin:20px;}
+        section{border:1px solid #ccc;padding:10px;margin-bottom:20px;}
+        textarea{width:100%;height:200px;}
+        .resume-block{border:1px dashed #999;padding:10px;margin-top:10px;}
+    </style>
+</head>
+<body>
+<h1>Multi Resume Builder</h1>
+<p>Store resume sections in your browser and assemble different resumes.</p>
+
+<section id="data-entry">
+<h2>Sections</h2>
+<div>
+    <h3>Add Summary</h3>
+    <input id="summaryText" placeholder="Summary text" size="50">
+    <button onclick="addSummary()">Add</button>
+    <ul id="summaryList"></ul>
+</div>
+
+<div>
+    <h3>Add Experience</h3>
+    <input id="expRole" placeholder="Role" size="15">
+    <input id="expOrg" placeholder="Organization" size="15">
+    <input id="expDates" placeholder="Dates" size="15">
+    <br>
+    <textarea id="expHighlights" placeholder="Highlights (one per line)"></textarea>
+    <br>
+    <button onclick="addExperience()">Add</button>
+    <ul id="experienceList"></ul>
+</div>
+
+<div>
+    <h3>Add Project</h3>
+    <input id="projTitle" placeholder="Title" size="20">
+    <input id="projLink" placeholder="Link (optional)" size="20">
+    <br>
+    <textarea id="projHighlights" placeholder="Highlights (one per line)"></textarea>
+    <br>
+    <button onclick="addProject()">Add</button>
+    <ul id="projectList"></ul>
+</div>
+
+<div>
+    <h3>Add Coursework</h3>
+    <input id="courseCategory" placeholder="Category" size="15">
+    <input id="courseItems" placeholder="Courses (comma separated)" size="30">
+    <button onclick="addCoursework()">Add</button>
+    <ul id="courseworkList"></ul>
+</div>
+
+<div>
+    <h3>Add Technical Skill Category</h3>
+    <input id="skillCategory" placeholder="Category" size="15">
+    <input id="skillItems" placeholder="Items (comma separated)" size="30">
+    <button onclick="addSkill()">Add</button>
+    <ul id="skillList"></ul>
+</div>
+
+<div>
+    <h3>Add Honor</h3>
+    <input id="honorText" placeholder="Honor" size="50">
+    <button onclick="addHonor()">Add</button>
+    <ul id="honorList"></ul>
+</div>
+</section>
+
+<section id="resumes">
+<h2>Resumes</h2>
+<input id="resumeName" placeholder="New resume name" size="20">
+<button onclick="addResume()">Add Resume</button>
+<div id="resumeContainer"></div>
+</section>
+
+<section>
+<h2>LaTeX Output</h2>
+<textarea id="latexOutput" readonly></textarea>
+<button onclick="copyLatex()">Copy to Clipboard</button>
+</section>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
